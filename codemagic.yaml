@@ -1,4 +1,17 @@
-workflows:-----------------------------------------------------------------iOS Workflow: Builds the Signed Release IPA-----------------------------------------------------------------flutter-ios-release:name: iOS Release Build# Required for iOS buildsinstance_type: mac_mini_m1environment:
+workflows:
+
+-----------------------------------------------------------------
+
+iOS Workflow: Builds the Signed Release IPA
+
+-----------------------------------------------------------------
+
+flutter-ios-release:
+name: iOS Release Build
+# Required for iOS builds
+instance_type: mac_mini_m1
+
+environment:
   flutter: stable
   # Specify Xcode and CocoaPods version for consistency
   xcode: latest
