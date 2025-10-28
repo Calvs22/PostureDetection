@@ -1,0 +1,53 @@
+codemagic.yaml
+
+This file defines the CI/CD workflow for Codemagic, focusing only on the iOS build.
+
+workflows:
+
+-----------------------------------------------------------------
+
+iOS Workflow: Builds the Signed Release IPA
+
+-----------------------------------------------------------------
+
+flutter-ios-release:
+name: iOS Release Build
+# Required for iOS builds
+instance_type: mac_mini_m1
+
+environment:
+  flutter: stable
+  # Specify Xcode and CocoaPods version for consistency
+  xcode: latest
+  cocoapods: default
+  vars:
+    # NOTE: For a release build (.ipa) to be successful, it MUST be
+    # signed. You must set up the App Store Connect API Key
+    # in the Codemagic UI for automatic code signing.
+    #
+    # REQUIRED SECRETS (set in UI):
+    # APP_STORE_CONNECT_ISSUER_ID
+    # APP_STORE_CONNECT_KEY_IDENTIFIER
+    # APP_STORE_CONNECT_PRIVATE_KEY
+
+scripts:
+  - name: Get Flutter dependencies
+    script: flutter pub get
+
+  - name: Install CocoaPods
+    script: |
+      # Install iOS dependencies
+      cd ios && pod install
+
+  - name: Run unit and widget tests
+    script: flutter test
+
+  - name: Build iOS IPA
+    script: |
+      # The Codemagic CLI uses the secrets set in the UI to handle
+      # code signing automatically during the build ipa process.
+      flutter build ipa --release
+
+artifacts:
+  # Collects the final signed .ipa file
+  - build/ios/ipa/*.ipa
