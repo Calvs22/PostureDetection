@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMDJ8vVblIfBvKAG226L/w2Q44/x66492FqWq6w2U08+G1p5a8uR0r52d5Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            /* Needed for the password icon positioning */
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        /* Styling for the eye icon button */
+        .toggle-password {
+            position: absolute;
+            top: 65%;
+            right: 12px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 0;
+            font-size: 16px;
+            z-index: 10;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            /* Center content (for spinner) */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-button:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        /* Disabled state for loading */
+        .login-button:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        /* Spinner style for loading state */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .error-message {
+            color: #ef4444;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+            padding: 10px;
+            background: #fef2f2;
+            border-radius: 6px;
+            border-left: 4px solid #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-shield-alt"></i> Admin Access</h1>
+            <p>Please login to view the dashboard</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+                <button type="button" class="toggle-password" id="togglePassword">
+                    <i class="fas fa-eye-slash"></i>
+                </button>
+            </div>
+
+            <button type="submit" class="login-button" id="loginButton">Login</button>
+        </form>
+
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <script src="js/config.js"></script>
+
+    <script>
+        // Get all necessary elements
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('errorMessage');
+        const passwordInput = document.getElementById('password');
+        const togglePasswordButton = document.getElementById('togglePassword');
+        const loginButton = document.getElementById('loginButton');
+
+        // --- Password Toggle Logic ---
+        togglePasswordButton.addEventListener('click', function () {
+            // Toggle the type attribute between 'password' and 'text'
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+
+            // Toggle the eye icon class
+            const icon = this.querySelector('i');
+            if (type === 'text') {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        });
+
+
+        // --- Login Form Submission Logic ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            errorMessage.style.display = 'none';
+
+            // START: Loading State
+            loginButton.disabled = true;
+            // Add spinner and change text for feedback
+            loginButton.innerHTML = '<div class="spinner"></div>Logging in...';
+
+            try {
+                // Call the admin_login function on Supabase
+                const { data: loginData, error: loginError } = await supabase
+                    .rpc('admin_login', {
+                        p_username: username,
+                        p_password: password
+                    });
+
+                if (loginError) {
+                    // For network errors, timeouts, etc.
+                    throw new Error('Login failed due to a connection issue. Please try again.');
+                }
+
+                if (!loginData || loginData.length === 0 || !loginData[0].success) {
+                    // Error based on the Supabase function's return value
+                    throw new Error('Invalid username or password. Please check your credentials.');
+                }
+
+                const result = loginData[0];
+
+                // Store admin session in local storage
+                const sessionData = {
+                    id: result.admin_id,
+                    username: result.username,
+                    loginTime: new Date().toISOString()
+                };
+
+                localStorage.setItem('adminSession', JSON.stringify(sessionData));
+
+                // Redirect to dashboard on success
+                window.location.href = 'dashboard.html';
+
+            } catch (error) {
+                // Display the user-friendly error message
+                console.error('Login error:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.style.display = 'block';
+
+            } finally {
+                // END: Loading State - happens whether login succeeds or fails
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+            }
+        });
+    </script>
+</body>
+
+</html>

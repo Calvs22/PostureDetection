@@ -1,0 +1,109 @@
+/home/calvs/Desktop/THESIS/fitness_tracker_app/lib
+├── auth
+│   ├── login_screen.dart
+│   └── signup_screen.dart
+├── body_posture
+│   ├── camera
+│   │   ├── exercises_logic.dart
+│   │   ├── pose_detection_camera_screen.dart
+│   │   ├── pose_detection_camera_screen_v2.dart
+│   │   └── pose_painter.dart
+│   ├── dumbbell_logic
+│   │   ├── bentover_row_logic.dart
+│   │   ├── dumbbell_chestfly_logic.dart
+│   │   ├── dumbbell_crunch_logic.dart
+│   │   ├── dumbbell_drag_curl_logic.dart
+│   │   ├── dumbbell_kickbacks_logic.dart
+│   │   ├── dumbbell_russian_twist.dart
+│   │   ├── dumbbell_split_squat_left_logic.dart
+│   │   ├── dumbbell_split_squat_right_logic.dart
+│   │   ├── dumbbell_squat_logic.dart
+│   │   ├── standing_dumbbell_curl_logic.dart
+│   │   └── valley_press_logic.dart
+│   └── exercises_logic
+│       ├── abdominal_crunches_logic.dart
+│       ├── alternating_hooks_logic.dart
+│       ├── arm_circles_clockwise_logic.dart
+│       ├── arm_circles_counterclockwise_logic.dart
+│       ├── arm_raises_logic.dart
+│       ├── bwsquat_logic.dart
+│       ├── calf_stretch_left_logic.dart
+│       ├── calf_stretch_right_logic.dart
+│       ├── cat_cow_pose_logic.dart
+│       ├── child_pose_logic.dart
+│       ├── cobra_stretch_logic.dart
+│       ├── decline_pushup_logic.dart
+│       ├── diamond_pushup_logic.dart
+│       ├── glutes_kickback_left_logic.dart
+│       ├── glutes_kickback_right_logic.dart
+│       ├── inchworm_logic.dart
+│       ├── incline_pushup_logic.dart
+│       ├── jumping_jacks_logic.dart
+│       ├── jumping_squat_logic.dart
+│       ├── knee_pushup_logic.dart
+│       ├── knee_to_chest_stretch_left_logic.dart
+│       ├── knee_to_chest_stretch_right_logic.dart
+│       ├── left_leg_donkey_kicks_logic.dart
+│       ├── left_leg_glute_kickback_logic.dart
+│       ├── leg_raises_logic.dart
+│       ├── lunges__logic.dart
+│       ├── pike_pushup_logic.dart
+│       ├── plank_logic.dart
+│       ├── pushup_logic.dart
+│       ├── rhomboid_pulls.dart
+│       ├── right_leg_donkey_kicks_logic.dart
+│       ├── right_leg_glute_kickback_logic.dart
+│       ├── russian_twist_logic.dart
+│       ├── side_hop_logic.dart
+│       ├── standing_bicep_stretch_left_logic.dart
+│       ├── standing_bicep_stretch_right_logic.dart
+│       ├── tricep_dips_logic.dart
+│       ├── tricep_stretch_left_logic.dart
+│       ├── tricep_stretch_right_logic.dart
+│       └── wall_sit_logic.dart
+├── db
+│   ├── database_helper.dart
+│   ├── initial_exercise_data.dart
+│   └── Models
+│       ├── exercise_model.dart
+│       ├── exercise_performance_model.dart
+│       ├── workout_feedback_model.dart
+│       ├── workoutlist_model.dart
+│       ├── workoutplan_model.dart
+│       └── workout_preference_model.dart
+├── Form
+│   ├── bdayform.dart
+│   ├── bmi.dart
+│   ├── genderform.dart
+│   ├── nickname.dart
+│   ├── progress_state.dart
+│   └── weekly_goal.dart
+├── Homepage
+│   ├── Discover
+│   │   ├── Exercise List
+│   │   │   ├── exercise_logic_factory.dart
+│   │   │   ├── exercise_screen.dart
+│   │   │   └── exercises_list.dart
+│   │   ├── Generatedexercise
+│   │   │   ├── exercise_selectionscreen.dart
+│   │   │   ├── startworkout
+│   │   │   │   ├── enhanced_workout_screen.dart
+│   │   │   │   └── start_workout_screen.dart
+│   │   │   ├── workoutconfiguration.dart
+│   │   │   ├── workoutgenerator.dart
+│   │   │   └── workoutplan_screen.dart
+│   │   └── generated_exercise_list.dart
+│   ├── discover_page.dart
+│   ├── homepage.dart
+│   ├── Report
+│   │   └── report_page.dart
+│   ├── Settings
+│   │   ├── backup_page.dart
+│   │   └── profilesetting.dart
+│   ├── settings_page.dart
+│   └── training_page.dart
+├── main.dart
+└── services
+    └── supabase_service.dart
+
+17 directories, 90 files
