@@ -25,7 +25,6 @@ workflows:
             --release \
             --build-name=$BUILD_NAME \
             --build-number=$BUILD_NUMBER \
-            --export-options-plist=$CM_EXPORT_OPTIONS_PATH
             
       - name: Zip the .app for easy download
         script: |
