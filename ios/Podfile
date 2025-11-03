@@ -1,0 +1,36 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '15.5'
+
+# Flutter requires a minimum deployment target of 11.0 to build the Runner project,
+# but the google_mlkit_commons plugin requires 15.5.
+# We set the version here and enforce it below.
+$iOSVersion = '15.5'
+
+# If you prefer to use dynamic frameworks, uncomment this line
+# use_frameworks!
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  # Pods for Runner
+  pod 'Flutter', :path => '../flutter'
+  pod 'FlutterLifecycle', :path => '.symlinks/flutter/platform_plugin_registrant/ios'
+
+  install_all_pods_from_source 'Runner'
+end
+
+target 'RunnerTests' do
+  inherit! :search_paths
+end
+
+# This post_install script ensures all targets (including plugins) honor the required 15.5 target.
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      # Enforce the minimum deployment target for all targets
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = $iOSVersion
+    end
+  end
+end
