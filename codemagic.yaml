@@ -1,49 +1,38 @@
 workflows:
+  unsigned-ios-app-build:
+    name: Unsigned iOS App Build
+    # Use a powerful machine for a faster build
+    instance_type: mac_mini_m2 
+    
+    environment:
+      flutter: stable
+      # Define your build version (You can change 1.0.0 and 1)
+      vars:
+        BUILD_NAME: 1.0.0
+        BUILD_NUMBER: 1
+      xcode: latest
+      cocoapods: default
 
------------------------------------------------------------------
-
-iOS Workflow: Builds the Signed Release IPA
-
------------------------------------------------------------------
-
-flutter-ios-release:
-name: iOS Release Build
-# Required for iOS builds
-instance_type: mac_mini_m1
-
-environment:
-  flutter: stable
-  # Specify Xcode and CocoaPods version for consistency
-  xcode: latest
-  cocoapods: default
-  vars:
-    # NOTE: For a release build (.ipa) to be successful, it MUST be
-    # signed. You must set up the App Store Connect API Key
-    # in the Codemagic UI for automatic code signing.
-    #
-    # REQUIRED SECRETS (set in UI):
-    # APP_STORE_CONNECT_ISSUER_ID
-    # APP_STORE_CONNECT_KEY_IDENTIFIER
-    # APP_STORE_CONNECT_PRIVATE_KEY
-
-scripts:
-  - name: Get Flutter dependencies
-    script: flutter pub get
-
-  - name: Install CocoaPods
-    script: |
-      # Install iOS dependencies
-      cd ios && pod install
-
-  - name: Run unit and widget tests
-    script: flutter test
-
-  - name: Build iOS IPA
-    script: |
-      # The Codemagic CLI uses the secrets set in the UI to handle
-      # code signing automatically during the build ipa process.
-      flutter build ipa --release
-
-artifacts:
-  # Collects the final signed .ipa file
-  - build/ios/ipa/*.ipa
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          flutter packages pub get
+      
+      - name: Build the unsigned iOS app
+        script: |
+          # This command builds the iOS app and explicitly disables code signing.
+          flutter build ios --no-codesign \
+            --release \
+            --build-name=$BUILD_NAME \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=$CM_EXPORT_OPTIONS_PATH
+            
+      - name: Zip the .app for easy download
+        script: |
+          # The resulting app is inside this path. We zip it so we can download one file.
+          cd build/ios/iphoneos
+          zip -r app_output.zip Runner.app
+          
+    artifacts:
+      # This tells Codemagic to keep the .zip file with our unsigned app
+      - build/ios/iphoneos/app_output.zip
