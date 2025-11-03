@@ -403,10 +403,13 @@ class _ExerciseSelectionScreenState extends State<ExerciseSelectionScreen> {
     if (widget.section == 'Warm-Up' || widget.section == 'Cool-Down') {
       // For Warm-up/Cool-Down, only Bodyweight exercises are relevant
       equipmentOptions = ['All', 'Bodyweight'];
-    } else if (widget.userEquipment == 'Bodyweight') {
-      // If the user selected Bodyweight in the configuration screen, only allow Bodyweight in the filter
-      equipmentOptions = ['All', 'Bodyweight'];
-    } else if (widget.userEquipment == 'Dumbbells') {
+    } 
+    // 🛑 FIXED LOGIC HERE: If the user selected Bodyweight, still show Dumbbells
+    // so they can choose it and trigger the warning.
+    else if (widget.userEquipment == 'Bodyweight') { 
+      equipmentOptions = ['All', 'Bodyweight', 'Dumbbells'];
+    } 
+    else if (widget.userEquipment == 'Dumbbells') {
       // If the user selected Dumbbells, allow both Bodyweight and Dumbbells
       equipmentOptions = ['All', 'Bodyweight', 'Dumbbells'];
     } else {

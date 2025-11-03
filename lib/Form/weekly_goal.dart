@@ -1,4 +1,4 @@
-// weekly_goal.dart (Modified to be the second step and navigate to NicknameScreen)
+// weekly_goal.dart
 
 // ignore_for_file: unused_import
 
@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_animated_button/flutter_animated_button.dart';
 import 'package:gap/gap.dart';
-import 'nickname.dart'; // Target screen: nickname.dart
+import 'disease.dart'; // ⬅️ NEW TARGET SCREEN
 import 'package:provider/provider.dart';
 import 'progress_state.dart';
 // import 'package:fitnesss_tracker_app/db/database_helper.dart'; // Database saving is moved to the last step (NicknameScreen)
@@ -40,20 +40,20 @@ class _WeeklyGoalScreenState extends State<WeeklyGoalScreen> {
     // context.read<AppProgressState>().completeStep(ProgressStep.weeklyGoal);
   }
 
-  void _navigateToNicknameScreen() {
-    // 🌟 FIX: Call completeStep right before navigating.
-    // This tells the app that this step is finished and updates the progress bar.
+  // 🔄 UPDATED METHOD NAME AND NAVIGATION TARGET
+  void _navigateToDiseaseScreen() {
+    // 🌟 Call completeStep right before navigating, marking this step as finished.
     context.read<AppProgressState>().completeStep(ProgressStep.weeklyGoal);
     
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => NicknameScreen(
+        builder: (context) => DiseaseScreen( // ⬅️ Navigate to the new DiseaseScreen
           gender: widget.gender,
           birthday: widget.birthday,
           height: widget.height,
           weight: widget.weight,
-          weeklyGoal: _selectedWeeklyGoal, // Pass the new goal
+          weeklyGoal: _selectedWeeklyGoal, // Pass the selected goal
         ),
       ),
     );
@@ -161,7 +161,7 @@ class _WeeklyGoalScreenState extends State<WeeklyGoalScreen> {
                   ),
                   const Gap(40),
                   AnimatedButton(
-                    onPress: _navigateToNicknameScreen, // Now calls the new method
+                    onPress: _navigateToDiseaseScreen, // ⬅️ CALLING THE NEW METHOD
                     height: 50,
                     width: 200,
                     text: 'Continue',

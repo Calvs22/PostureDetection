@@ -11,10 +11,16 @@ class WorkoutGenerator {
     final workoutPreference = await dbHelper.getLatestWorkoutPreference();
     if (workoutPreference == null) return [];
 
+    // ⭐️ Retrieve User Info for cardiopulmonary safety constraint
+    final userInfo = await dbHelper.getLatestUserInfo();
+    final bool hasCardiopulmonaryIssue = userInfo?['haveDisease'] == 1;
+
     final fitnessLevel = workoutPreference.fitnessLevel;
     final goal = workoutPreference.goal;
     final useDumbbells = workoutPreference.equipment == 'Dumbbells';
     final targetDurationMinutes = workoutPreference.minutes;
+    // ⭐️ Retrieve the sore muscle group
+    final soreMuscleGroup = workoutPreference.soreMuscleGroup;
 
     final allExercises = await dbHelper.getAllExercises();
     final List<Map<String, dynamic>> fullPlan = [];
@@ -38,7 +44,12 @@ class WorkoutGenerator {
         allExercises.where((e) => e.category == 'Warm-up').toList()
           ..shuffle(_random);
     for (var ex in warmUpExercises.take(3)) {
-      fullPlan.add(createPlanEntry('Warm-Up', ex, 1, 20, 15));
+      
+      // Apply safety check to Warm-up reps/sets
+      final warmUpSets = hasCardiopulmonaryIssue ? 1 : 1;
+      final warmUpReps = hasCardiopulmonaryIssue ? 15 : 20; // Cap to 15-20
+      
+      fullPlan.add(createPlanEntry('Warm-Up', ex, warmUpSets, warmUpReps, 15));
     }
 
     // 2. Generate Main Workout (Dynamic based on duration)
@@ -47,6 +58,7 @@ class WorkoutGenerator {
       goal: goal,
       level: fitnessLevel,
       dumbbells: useDumbbells,
+      soreMuscleGroup: soreMuscleGroup, // Pass sore muscle group
     );
 
     int mainWorkoutCount;
@@ -65,7 +77,9 @@ class WorkoutGenerator {
       final selectedIndex = _random.nextInt(exercisesToChoose.length);
       final ex = exercisesToChoose[selectedIndex];
 
-      final workoutParams = _calculateWorkoutParams(goal, ex.type);
+      // Pass cardiopulmonary flag to calculate parameters
+      final workoutParams = _calculateWorkoutParams(
+          goal, ex.type, hasCardiopulmonaryIssue);
       final sets = workoutParams['sets']!;
       final reps = workoutParams['reps']!;
       final rest = workoutParams['rest']!;
@@ -73,6 +87,7 @@ class WorkoutGenerator {
       fullPlan.add(createPlanEntry('Workout', ex, sets, reps, rest));
       exercisesAdded++;
 
+      // Handle paired exercises (left/right)
       if (ex.name.contains('(Left)') || ex.name.contains('(Right)')) {
         final pairedName = ex.name.contains('(Left)')
             ? ex.name.replaceAll('(Left)', '(Right)')
@@ -87,7 +102,9 @@ class WorkoutGenerator {
         }
 
         if (pairedExercise != null) {
-          final pairedParams = _calculateWorkoutParams(goal, pairedExercise.type);
+          // Pass cardiopulmonary flag to calculate parameters for paired exercise
+          final pairedParams = _calculateWorkoutParams(
+              goal, pairedExercise.type, hasCardiopulmonaryIssue);
           final pairedSets = pairedParams['sets']!;
           final pairedReps = pairedParams['reps']!;
           final pairedRest = pairedParams['rest']!;
@@ -112,7 +129,8 @@ class WorkoutGenerator {
       final selectedIndex = _random.nextInt(exercisesToChooseCoolDown.length);
       final ex = exercisesToChooseCoolDown[selectedIndex];
 
-      int coolDownReps = 30; // 30 seconds for stretch
+      // Set Cool-Down parameters
+      int coolDownReps = hasCardiopulmonaryIssue ? 20 : 30; // 20-30 seconds for stretch
       int coolDownSets = 1;
 
       fullPlan.add(createPlanEntry(
@@ -133,7 +151,7 @@ class WorkoutGenerator {
         }
 
         if (pairedExercise != null) {
-          int pairedCoolDownReps = 30;
+          int pairedCoolDownReps = hasCardiopulmonaryIssue ? 20 : 30;
           int pairedCoolDownSets = 1;
           fullPlan.add(createPlanEntry('Cool-Down', pairedExercise,
               pairedCoolDownSets, pairedCoolDownReps, 10));
@@ -152,6 +170,7 @@ class WorkoutGenerator {
     required String? goal,
     required String? level,
     required bool dumbbells,
+    required String soreMuscleGroup,
   }) async {
     final List<Exercise> filtered = [];
     final workoutExercises = allExercises
@@ -164,6 +183,18 @@ class WorkoutGenerator {
       levelsToFilter.add('Intermediate');
     } else if (level == 'Intermediate') {
       levelsToFilter.add('Beginner');
+    }
+
+    // Define muscles to exclude based on user input, matching your data's capitalization
+    final List<String> excludedMuscles;
+    if (soreMuscleGroup == 'lower body') {
+      // Muscles from your list: Quads, Glutes, Hamstrings, Calves
+      excludedMuscles = ['quads', 'glutes', 'hamstrings', 'calves'];
+    } else if (soreMuscleGroup == 'upper body') {
+      // Muscles from your list: Shoulders, Arms, Chest, Triceps, Biceps, Back, Upper Chest, Upper Back, Abs, Obliques
+      excludedMuscles = ['shoulders', 'arms', 'chest', 'triceps', 'biceps', 'back', 'upper chest', 'upper back', 'abs', 'obliques', 'core'];
+    } else {
+      excludedMuscles = []; // 'none at all'
     }
 
     for (var e in workoutExercises) {
@@ -180,15 +211,37 @@ class WorkoutGenerator {
           (goal == 'Build Muscle' && e.category == 'Strength') ||
           (goal == 'Keep Fit' && (e.category == 'Cardio' || e.category == 'Strength'));
 
-      if (matchesEquipment && matchesLevel && matchesGoal) {
+      // ⭐️ CORRECTED FIX: Check for sore muscle exclusion
+      bool isMuscleSore = false;
+      if (excludedMuscles.isNotEmpty) {
+        // Convert the List<String> to a new List<String> of lowercase names
+        final exerciseMuscles = e.primaryMuscleGroups
+            .map((m) => m.toLowerCase()) // 👈 Map and convert each string to lowercase
+            .toList();
+        
+        // Check if any of the exercise's primary muscles are in the excluded list
+        isMuscleSore = exerciseMuscles.any((muscle) => excludedMuscles.contains(muscle));
+      }
+      
+      // Only add the exercise if it meets all criteria AND the muscle is NOT sore
+      if (matchesEquipment && matchesLevel && matchesGoal && !isMuscleSore) {
         filtered.add(e);
       }
     }
 
     if (filtered.isEmpty) {
-      // Fallback to a broader search if the initial filter is empty
+      // Fallback to a broader search if the initial filter is empty, but still respect sore muscle logic
       for (var e in workoutExercises) {
-        if (levelsToFilter.contains(e.difficulty)) {
+        // Re-check sore muscle condition for fallback
+        bool isMuscleSore = false;
+        if (excludedMuscles.isNotEmpty) {
+          final exerciseMuscles = e.primaryMuscleGroups
+              .map((m) => m.toLowerCase()) // 👈 Map and convert each string to lowercase
+              .toList();
+          isMuscleSore = exerciseMuscles.any((muscle) => excludedMuscles.contains(muscle));
+        }
+
+        if (levelsToFilter.contains(e.difficulty) && !isMuscleSore) {
           filtered.add(e);
         }
       }
@@ -199,7 +252,11 @@ class WorkoutGenerator {
   }
   
   // New function to calculate sets, reps, and rest based on goal
-  Map<String, int> _calculateWorkoutParams(String? goal, String? exerciseType) {
+  Map<String, int> _calculateWorkoutParams(
+      String? goal,
+      String? exerciseType,
+      bool hasCardiopulmonaryIssue, // Health safety flag
+      ) {
     int sets = 3;
     int reps = 12;
     int rest = 30;
@@ -218,10 +275,24 @@ class WorkoutGenerator {
       rest = 45;
     }
     
-    // Override reps for 'Timer' type exercises
+    // Override reps/sets for 'Timer' type exercises
     if (exerciseType == 'Timer') {
-      reps = 60; // 60 seconds
+      reps = 60; // 60 seconds is standard
       sets = 1; // Always 1 set for timer-based exercises
+    }
+    
+    // ⭐️ CRITICAL SAFETY LOGIC: Override for cardiopulmonary issue
+    if (hasCardiopulmonaryIssue) {
+      sets = 1; // Must be 1 set to pass the safety check (<=2 sets)
+      rest = 60; // Increase rest time for safety
+      
+      if (exerciseType == 'Timer') {
+        // Must be <= 15 seconds to pass the safety check
+        reps = 15; 
+      } else {
+        // Must be <= 15 reps to pass the safety check (10 reps is safe)
+        reps = 10; 
+      }
     }
 
     return {'sets': sets, 'reps': reps, 'rest': rest};

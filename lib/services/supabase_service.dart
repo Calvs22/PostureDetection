@@ -11,7 +11,13 @@ class SupabaseService {
 
   SupabaseService(this._localDbService);
 
+  // ------------------------------------------------------------------
   // --- UTILITIES ---
+  // ------------------------------------------------------------------
+  
+  /// 🛑 FIX: Public Getter to expose the private local database service
+  /// This resolves the "getter 'localDbService' isn't defined" error.
+  LocalDatabaseService get localDbService => _localDbService;
 
   // Helper to safely parse ISO 8601 strings into a DateTime object.
   DateTime? _parseTimestamp(Map<String, dynamic>? data, String key) {
@@ -25,7 +31,9 @@ class SupabaseService {
     }
   }
 
+  // ------------------------------------------------------------------
   // --- AUTHENTICATION ---
+  // ------------------------------------------------------------------
 
   /// Handles user sign-up (creates the auth.users entry only).
   Future<void> signUp({
@@ -77,7 +85,9 @@ class SupabaseService {
     }
   }
 
+  // ------------------------------------------------------------------
   // --- PROFILE CHECK ---
+  // ------------------------------------------------------------------
 
   /// Checks if the currently logged-in user has a profile in the 'profiles' table.
   Future<bool> getCurrentUserProfileExists() async {

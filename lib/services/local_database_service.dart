@@ -43,4 +43,11 @@ abstract class LocalDatabaseService {
   /// The returned data list MUST include the 'session_local_id' and 'exercise_name'
   /// keys for conflict resolution on the Supabase side.
   Future<List<Map<String, dynamic>>> getSessionAndPerformanceData(int sessionId);
+
+  // ----------------------------------------------------------------------
+  // --- LOGOUT DATA CLEANUP (FIXED POSITION) ---
+  // ----------------------------------------------------------------------
+  
+  /// Wipes ALL user-generated data from the local database upon logout.
+  Future<void> clearAllLocalData(); 
 }

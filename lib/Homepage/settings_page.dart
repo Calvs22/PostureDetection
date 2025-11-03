@@ -2,8 +2,11 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:fitnesss_tracker_app/Homepage/Settings/profilesetting.dart';
 import 'package:fitnesss_tracker_app/Homepage/Settings/backup_page.dart';
+// IMPORTANT: Import your global service file to access the database helper
+import 'package:fitnesss_tracker_app/main.dart'; 
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,7 +16,67 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  void _exitApp() => exit(0);
+  
+  // Helper function to show a generic confirmation dialog
+  Future<bool> _showConfirmationDialog(String title, String content) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false), // User pressed "No"
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true), // User pressed "Yes"
+              child: const Text('Yes'),
+            ),
+          ],
+        );
+      },
+    ) ?? false; // Default to false if dialog is dismissed
+  }
+
+  // Logout handler with confirmation AND data wipe
+  Future<void> _handleLogout() async {
+    final confirmed = await _showConfirmationDialog(
+      'Confirm Logout',
+      'Are you sure you want to log out and clear all local data?',
+    );
+
+    if (confirmed) {
+      try {
+        // 1. Clear ALL local data for offline-first architecture
+        // This requires clearAllLocalData to be implemented in DatabaseHelper
+        await globalSupabaseService.localDbService.clearAllLocalData();
+        
+        // 2. Sign the user out of Supabase Auth (triggers navigation)
+        await Supabase.instance.client.auth.signOut();
+        
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Logout failed. Please check your connection.')),
+          );
+        }
+      }
+    }
+  }
+
+  // Exit handler, modified to include confirmation
+  void _exitAppWithConfirmation() async {
+    final confirmed = await _showConfirmationDialog(
+      'Confirm Exit',
+      'Are you sure you want to exit the application?',
+    );
+    if (confirmed) {
+      // Safely exits the application.
+      exit(0);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +99,7 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: const EdgeInsets.all(16),
             child: ListView(
               children: [
-                // Profile Settings Card
+                // Profile Settings Card (existing)
                 Card(
                   elevation: 3,
                   shape: RoundedRectangleBorder(
@@ -71,7 +134,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Backup Card
+                // Backup Card (existing)
                 Card(
                   elevation: 3,
                   shape: RoundedRectangleBorder(
@@ -106,34 +169,65 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 40),
 
-                // Exit button centered
-                Center(
-                  child: Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: SizedBox(
-                      width: 180,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        leading: const Icon(
-                          Icons.exit_to_app,
-                          color: Colors.red,
-                          size: 32,
+                // NEW: Row to hold Logout and Exit buttons side-by-side
+                Row(
+                  children: [
+                    // LOGOUT BUTTON CARD
+                    Expanded(
+                      child: Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          leading: const Icon(
+                            Icons.logout,
+                            color: Colors.orange, 
+                            size: 32,
+                          ),
+                          title: const Text(
+                            'Logout',
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.orange),
+                          ),
+                          onTap: _handleLogout, // Calls the handler with data wipe
                         ),
-                        title: const Text(
-                          'Exit',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.red),
-                        ),
-                        onTap: _exitApp,
                       ),
                     ),
-                  ),
+                    
+                    const SizedBox(width: 16), // Space between cards
+
+                    // EXIT BUTTON CARD
+                    Expanded(
+                      child: Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          leading: const Icon(
+                            Icons.exit_to_app,
+                            color: Colors.red,
+                            size: 32,
+                          ),
+                          title: const Text(
+                            'Exit',
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red),
+                          ),
+                          onTap: _exitAppWithConfirmation, // Calls the handler with confirmation
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+                // End of side-by-side buttons
               ],
             ),
           ),

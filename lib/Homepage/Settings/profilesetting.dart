@@ -6,8 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:fitnesss_tracker_app/db/database_helper.dart';
-import 'package:fitnesss_tracker_app/main.dart'; // CRITICAL: Import main.dart to access globalSupabaseService
-import 'package:supabase_flutter/supabase_flutter.dart'; // Import Supabase for user ID
+import 'package:fitnesss_tracker_app/main.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 
 class ProfileSettingsPage extends StatefulWidget {
     const ProfileSettingsPage({super.key});
@@ -25,20 +25,18 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     // State variables for user profile details
     String gender = 'Prefer Not to Say';
     DateTime birthday = DateTime(2000, 1, 1);
-    int weeklyGoal = 3; // Default to 3 days
+    int weeklyGoal = 3; 
+    bool haveDisease = false; // State for the health condition
     bool isLoading = true;
 
-    // CRITICAL FIX:
-    // 1. currentUserId (String UUID): Used for Supabase Upsert and RLS.
-    // 2. localProfileId (Integer): Used for SQLite UPDATE WHERE clause.
+    // Supabase and SQLite IDs
     String? currentUserId; 
-    int? localProfileId; // <-- NEW: Holds the local integer primary key ID
+    int? localProfileId; 
     File? profileImage;
 
     @override
     void initState() {
         super.initState();
-        // Get the current Supabase user ID right away
         currentUserId = Supabase.instance.client.auth.currentUser?.id;
         _loadUserInfo();
         _loadSavedImage();
@@ -46,25 +44,20 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
     // --- Data Loading and Initialization ---
 
-    // Load user information from the database
     Future<void> _loadUserInfo() async {
         final userInfo = await DatabaseHelper.instance.getLatestUserInfo();
         
-        // If local data exists, populate the fields
         if (userInfo != null && mounted) {
             setState(() {
-                // CRITICAL FIX: Extract the local integer ID for future SQLite updates
                 localProfileId = userInfo['id'] as int?; 
                 
                 nicknameController.text = userInfo['nickname'] ?? '';
                 gender = userInfo['gender'] ?? 'Prefer Not to Say';
                 try {
-                    // Try parsing the birthday string from the database
                     birthday = DateFormat('yyyy-MM-dd').parse(userInfo['birthday'] ?? '2000-01-01');
                 } catch (_) {
-                     birthday = DateTime(2000, 1, 1); // Fallback
+                     birthday = DateTime(2000, 1, 1); 
                 }
-                // Handle potential int/double storage from DB
                 heightController.text = (userInfo['height'] is double) 
                     ? userInfo['height'].toString() 
                     : userInfo['height']?.toString() ?? '';
@@ -72,14 +65,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
                     ? userInfo['weight'].toString() 
                     : userInfo['weight']?.toString() ?? '';
                 weeklyGoal = userInfo['weeklyGoal'] ?? 3;
+                haveDisease = (userInfo['haveDisease'] as int?) == 1; 
             });
         }
         if (mounted) {
-              setState(() => isLoading = false);
+             setState(() => isLoading = false);
         }
     }
 
-    // Load a saved profile image from local storage
     Future<void> _loadSavedImage() async {
         final directory = await getApplicationDocumentsDirectory();
         final savedImage = File('${directory.path}/profile.jpg');
@@ -88,9 +81,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         }
     }
 
-    // --- Image Handling ---
-
-    // Open the image gallery for the user to pick a new profile photo
+    // --- Image Handling (omitted for brevity, no changes here) ---
     Future<void> _pickImage() async {
         final picker = ImagePicker();
         final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -99,7 +90,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         final directory = await getApplicationDocumentsDirectory();
         final newPath = '${directory.path}/profile.jpg';
 
-        // Delete old image before copying new one
         final oldImage = File(newPath);
         if (await oldImage.exists()) await oldImage.delete();
 
@@ -111,7 +101,6 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
         }
     }
 
-    // Delete the saved profile image
     Future<void> _deleteImage() async {
         final directory = await getApplicationDocumentsDirectory();
         final imagePath = '${directory.path}/profile.jpg';
@@ -129,81 +118,73 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
 
     // --- Profile Saving and Synchronization ---
 
-    // Save the user's profile information to the database
-  // --- Profile Saving and Synchronization ---
+    Future<void> _saveProfile() async {
+        if (currentUserId == null || localProfileId == null) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(currentUserId == null 
+                        ? '⚠️ Not logged in. Cannot save profile.' 
+                        : '⚠️ Profile record not found locally. Cannot update.'),
+                    duration: const Duration(milliseconds: 2000),
+                ),
+            );
+            return;
+        }
 
-// Save the user's profile information to the database
-Future<void> _saveProfile() async {
-    // CRITICAL: Check if we have a user ID from Supabase AND a local ID to update
-    if (currentUserId == null || localProfileId == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(currentUserId == null 
-                    ? '⚠️ Not logged in. Cannot save profile.' 
-                    : '⚠️ Profile record not found locally. Cannot update.'),
-                duration: const Duration(milliseconds: 2000),
-            ),
-        );
-        return;
-    }
+        final nickname = nicknameController.text.trim();
+        final height = double.tryParse(heightController.text);
+        final weight = double.tryParse(weightController.text);
 
-    final nickname = nicknameController.text.trim();
-    final height = double.tryParse(heightController.text);
-    final weight = double.tryParse(weightController.text);
+        if (nickname.isEmpty || height == null || weight == null) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('Please complete all fields properly.'),
+                    duration: Duration(milliseconds: 1500),
+                ),
+            );
+            return;
+        }
 
-    if (nickname.isEmpty || height == null || weight == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Please complete all fields properly.'),
-                duration: Duration(milliseconds: 1500),
-            ),
-        );
-        return;
-    }
-
-    // 1. Update the local database. 
-    await DatabaseHelper.instance.updateUserInfo({
-        'local_id': localProfileId, // <-- CRITICAL: Local SQLite ID for WHERE clause
-        'id': currentUserId,       // <-- Supabase UUID for data column/Cloud Sync
-        'nickname': nickname,
-        'gender': gender,
-        'birthday': DateFormat('yyyy-MM-dd').format(birthday),
-        'height': height,
-        'weight': weight,
-        'weeklyGoal': weeklyGoal,
-        // 'last_modified_at' is handled by the LocalDatabaseService
-    });
-    
-    // 2. Push the updated data from the local database to the Supabase cloud
-    try {
-        await globalSupabaseService.pushProfileToCloud();
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('✅ Profile updated and synchronized successfully!'),
-                duration: Duration(milliseconds: 1500),
-            ),
-        );
-    } catch (e) {
-        if (!mounted) return;
-
-        // --- FIX HERE: Provide a user-friendly error message ---
-        // If the error is a SocketException (e.g., no internet), it's a connection issue.
-        final String errorMessage = (e is SocketException) 
-            ? '⚠️ Profile saved locally. Cloud sync failed: Check your internet connection.'
-            : '⚠️ Profile saved locally, but cloud sync failed. Try again later.';
+        // 1. Update the local database. 
+        await DatabaseHelper.instance.updateUserInfo({
+            'local_id': localProfileId, 
+            'id': currentUserId,       
+            'nickname': nickname,
+            'gender': gender,
+            'birthday': DateFormat('yyyy-MM-dd').format(birthday),
+            'height': height,
+            'weight': weight,
+            'weeklyGoal': weeklyGoal,
+            'haveDisease': haveDisease ? 1 : 0, 
+        });
         
-        // Show user-friendly error if Supabase push fails
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content: Text(errorMessage),
-                duration: const Duration(seconds: 3),
-            ),
-        );
+        // 2. Push the updated data from the local database to the Supabase cloud
+        try {
+            await globalSupabaseService.pushProfileToCloud();
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text('✅ Profile updated and synchronized successfully!'),
+                    duration: Duration(milliseconds: 1500),
+                ),
+            );
+        } catch (e) {
+            if (!mounted) return;
+
+            final String errorMessage = (e is SocketException) 
+                ? '⚠️ Profile saved locally. Cloud sync failed: Check your internet connection.'
+                : '⚠️ Profile saved locally, but cloud sync failed. Try again later.';
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text(errorMessage),
+                    duration: const Duration(seconds: 3),
+                ),
+            );
+        }
     }
-}
 
     @override
     void dispose() {
@@ -213,7 +194,7 @@ Future<void> _saveProfile() async {
         super.dispose();
     }
 
-    // --- UI Helpers ---
+    // --- UI Helpers (omitted for brevity, no changes here) ---
 
     String getGenderAsset() {
         switch (gender.toUpperCase()) {
@@ -313,6 +294,54 @@ Future<void> _saveProfile() async {
                 ),
             ],
         );
+    }
+    
+    // ⭐️ MODIFIED: Updated the question text
+    Widget _buildDiseaseToggle() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Do you have a cardiopulmonary disease? (e.g., heart disease, hypertension, asthma)', // ⭐️ UPDATED TEXT
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ListTile(
+                  title: const Text('Yes'),
+                  leading: Radio<bool>(
+                    value: true,
+                    groupValue: haveDisease,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        setState(() => haveDisease = value);
+                      }
+                    },
+                  ),
+                  onTap: () => setState(() => haveDisease = true),
+                ),
+              ),
+              Expanded(
+                child: ListTile(
+                  title: const Text('No'),
+                  leading: Radio<bool>(
+                    value: false,
+                    groupValue: haveDisease,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        setState(() => haveDisease = value);
+                      }
+                    },
+                  ),
+                  onTap: () => setState(() => haveDisease = false),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
     }
 
     Widget _buildWeeklyGoalSlider() {
@@ -464,6 +493,8 @@ Future<void> _saveProfile() async {
                                 ),
                                 const SizedBox(height: 16),
                                 _buildWeeklyGoalSlider(),
+                                const SizedBox(height: 16),
+                                _buildDiseaseToggle(), // Using the updated widget
                             ],
                         ),
                     ),

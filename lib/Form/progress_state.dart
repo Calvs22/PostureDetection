@@ -5,16 +5,17 @@ enum ProgressStep {
   birthday,
   height,
   weight,
-  weeklyGoal, // <<<<<<<< NEW STEP ADDED
+  weeklyGoal, 
+  haveDisease, // ⭐️ NEW STEP: Added for the health check screen
   nickname,
 }
 
 class AppProgressState with ChangeNotifier {
   final Set<ProgressStep> _completedSteps = {};
   
-  // 💡 MODIFIED: There are now 6 total steps (gender, birthday, height, 
-  // weight, weeklyGoal, nickname), so each is ~16.67%
-  final int _totalSteps = 6; // <<<<<<<< UPDATED TOTAL STEPS
+  // 💡 UPDATED: There are now 7 total steps (gender, birthday, height, 
+  // weight, weeklyGoal, haveDisease, nickname).
+  final int _totalSteps = 7; // ⭐️ UPDATED TOTAL STEPS
 
   double get currentProgress {
     if (_totalSteps == 0) return 0.0;
