@@ -1,5 +1,5 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '15.5'
+platform :ios, '15.5' # Minimum required for google_mlkit_commons
 
 # Flutter requires a minimum deployment target of 11.0 to build the Runner project,
 # but the google_mlkit_commons plugin requires 15.5.
@@ -17,7 +17,7 @@ target 'Runner' do
   pod 'Flutter', :path => '../flutter'
   pod 'FlutterLifecycle', :path => '.symlinks/flutter/platform_plugin_registrant/ios'
 
-  install_all_pods_from_source 'Runner'
+  # NOTE: The line 'install_all_pods_from_source 'Runner'' has been REMOVED as it was invalid.
 end
 
 target 'RunnerTests' do
